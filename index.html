@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#7763f5">
+<title>NEXUS CALC — Калькулятор</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #0b0e17;
+  font-family: Arial, sans-serif;
+  color: white;
+}
+.calculator {
+  width: min(390px, 94vw);
+  padding: 24px;
+  border-radius: 28px;
+  background: #151a28;
+  border: 1px solid #30374b;
+  box-shadow: 0 25px 80px #0008;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.logo { color: #9b8cff; font-size: 21px; font-weight: bold; }
+.subtitle { color: #858da5; font-size: 12px; margin-top: 5px; }
+.display {
+  background: #0d1220;
+  border-radius: 16px;
+  padding: 20px 16px;
+  margin-bottom: 18px;
+  text-align: right;
+  overflow: hidden;
+}
+#expression {
+  min-height: 22px;
+  color: #929bb3;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+#result {
+  margin-top: 12px;
+  font-size: clamp(28px, 8vw, 40px);
+  font-weight: bold;
+  overflow-wrap: anywhere;
+}
+.buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+button {
+  border: none;
+  border-radius: 13px;
+  min-height: 58px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #f4f5ff;
+  background: #252c3e;
+  cursor: pointer;
+  transition: .15s;
+}
+button:hover { filter: brightness(1.25); }
+button:active { transform: scale(.95); }
+.utility { background: #34314e; color: #c1b6ff; }
+.operator { background: #292344; color: #b8a8ff; }
+.equals { background: #7763f5; color: white; }
+.wide { grid-column: span 3; }
+#angle-btn { font-size: 15px; }
+.footer {
+  margin-top: 18px;
+  text-align: center;
+  color: #737d96;
+  font-size: 11px;
+}
+
+/* История вычислений */
+.history {
+  margin-top: 20px;
+  padding: 14px;
+  background: #0d1220;
+  border: 1px solid #30374b;
+  border-radius: 16px;
+}
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: bold;
+}
+.clear-history {
+  min-height: 32px;
+  padding: 5px 9px;
+  font-size: 12px;
+  background: #34314e;
+  color: #c1b6ff;
+  border-radius: 8px;
+}
+.history-item {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  padding: 9px 10px;
+  margin-top: 7px;
+  text-align: right;
+  background: #20273a;
+  border: 1px solid #30374b;
+  border-radius: 10px;
+  font-size: 14px;
+}
+.history-item .history-expression {
+  display: block;
+  color: #929bb3;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.history-item .history-answer {
+  display: block;
+  margin-top: 4px;
+  color: #b8a8ff;
+  overflow-wrap: anywhere;
+}
+.history-empty {
+  color: #858da5;
+  text-align: center;
+  font-size: 12px;
+  padding: 12px 0;
+}
+
+/* Мобильная версия NEXUS CALC */
+@media (max-width: 480px) {
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    align-items: flex-start;
+    padding: 12px;
+  }
+  .calculator {
+    width: 100%;
+    max-width: 430px;
+    padding: 18px;
+    border-radius: 24px;
+  }
+  .header { margin-bottom: 18px; }
+  .logo { font-size: 20px; }
+  .display {
+    padding: 18px 14px;
+    margin-bottom: 16px;
+    border-radius: 18px;
+  }
+  #expression { font-size: 15px; }
+  #result {
+    font-size: clamp(28px, 9vw, 40px);
+    min-height: 42px;
+  }
+  .buttons { gap: 8px; }
+  button {
+    min-width: 0;
+    min-height: clamp(52px, 8.5vh, 68px);
+    padding: 6px 2px;
+    border-radius: 14px;
+    font-size: clamp(18px, 5vw, 23px);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #angle-btn { font-size: 15px; }
+  .footer {
+    margin-top: 16px;
+    font-size: 10px;
+  }
+}
+</style>
+</head>
+<body>
+<div class="calculator">
+  <div class="header">
+    <div>
+      <div class="logo">✦ NEXUS CALC</div>
+      <div class="subtitle">SMART SCIENTIFIC CALCULATOR</div>
+    </div>
+    <div>◉</div>
+  </div>
+
+  <div class="display">
+    <div id="expression">Готов к вычислениям</div>
+    <div id="result">0</div>
+  </div>
+
+  <div class="buttons">
+    <button class="utility" onclick="clearAll()">AC</button>
+    <button class="utility" onclick="backspace()">⌫</button>
+    <button class="utility" onclick="percent()">%</button>
+    <button class="operator" onclick="press('/')">÷</button>
+
+    <button onclick="press('7')">7</button>
+    <button onclick="press('8')">8</button>
+    <button onclick="press('9')">9</button>
+    <button class="operator" onclick="press('*')">×</button>
+
+    <button onclick="press('4')">4</button>
+    <button onclick="press('5')">5</button>
+    <button onclick="press('6')">6</button>
+    <button class="operator" onclick="press('-')">−</button>
+
+    <button onclick="press('1')">1</button>
+    <button onclick="press('2')">2</button>
+    <button onclick="press('3')">3</button>
+    <button class="operator" onclick="press('+')">+</button>
+
+    <button class="utility" onclick="press('(')">(</button>
+    <button onclick="press('0')">0</button>
+    <button onclick="press('.')">.</button>
+    <button class="equals" onclick="calculate()">=</button>
+
+    <button class="utility" onclick="scientific('sqrt')">√</button>
+    <button class="utility" onclick="scientific('square')">x²</button>
+    <button class="utility" onclick="scientific('sin')">sin</button>
+    <button class="utility" onclick="scientific('cos')">cos</button>
+
+    <button class="utility" onclick="scientific('tan')">tan</button>
+    <button class="utility" onclick="scientific('log')">log</button>
+    <button class="utility" onclick="scientific('ln')">ln</button>
+    <button class="utility" onclick="press(')')">)</button>
+
+    <button class="utility" onclick="press('π')">π</button>
+    <button class="utility" onclick="press('ℯ')">ℯ</button>
+    <button class="utility" onclick="press('^')">xʸ</button>
+    <button class="utility" onclick="negate()">±</button>
+
+    <button class="utility" onclick="scientific('inv')">1/x</button>
+    <button class="utility wide" id="angle-btn" onclick="toggleAngle()">DEG</button>
+  </div>
+
+  <div class="history">
+    <div class="history-header">
+      <span>🕘 История вычислений</span>
+      <button class="clear-history" onclick="clearHistory()">Очистить</button>
+    </div>
+    <div id="history-list">
+      <div class="history-empty">Здесь пока нет вычислений</div>
+    </div>
+  </div>
+
+  <div class="footer">NEXUS CALC • SCIENTIFIC EDITION</div>
+</div>
+
+<script>
+const expression = document.getElementById('expression');
+const result = document.getElementById('result');
+let current = '';
+let finished = false;
+let history = [];
+let angleMode = 'deg';
+
+try {
+  history = JSON.parse(localStorage.getItem('nexusCalcHistory') || '[]');
+  if (!Array.isArray(history)) history = [];
+  if (localStorage.getItem('nexusCalcAngle') === 'rad') angleMode = 'rad';
+} catch {
+  history = [];
+}
+
+// Округление: убирает хвосты вроде 1.22e-16 и ошибки float
+function format(n) {
+  if (Math.abs(n) < 1e-12) n = 0;
+  return String(Number(n.toPrecision(12)));
+}
+
+/* ---------- Градусы / радианы ---------- */
+function renderAngle() {
+  const b = document.getElementById('angle-btn');
+  if (b) b.textContent = angleMode === 'deg' ? 'DEG • градусы' : 'RAD • радианы';
+}
+
+function toggleAngle() {
+  angleMode = angleMode === 'deg' ? 'rad' : 'deg';
+  try {
+    localStorage.setItem('nexusCalcAngle', angleMode);
+  } catch (error) {
+    console.warn('Не удалось сохранить режим углов', error);
+  }
+  renderAngle();
+}
+
+/* ---------- История ---------- */
+function saveHistory(example, answer) {
+  history.unshift({ example, answer });
+  history = history.slice(0, 10);
+  try {
+    localStorage.setItem('nexusCalcHistory', JSON.stringify(history));
+  } catch (error) {
+    console.warn('Не удалось сохранить историю', error);
+  }
+  renderHistory();
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  if (!list) return;
+  list.replaceChildren();
+
+  if (history.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'history-empty';
+    empty.textContent = 'Здесь пока нет вычислений';
+    list.appendChild(empty);
+    return;
+  }
+
+  history.forEach(item => {
+    const button = document.createElement('button');
+    button.className = 'history-item';
+
+    const example = document.createElement('span');
+    example.className = 'history-expression';
+    example.textContent = item.example + ' =';
+
+    const answer = document.createElement('span');
+    answer.className = 'history-answer';
+    answer.textContent = item.answer;
+
+    button.append(example, answer);
+    button.addEventListener('click', () => {
+      current = String(item.answer);
+      finished = true;
+      expression.textContent = item.example + ' =';
+      result.textContent = current;
+    });
+    list.appendChild(button);
+  });
+}
+
+function clearHistory() {
+  history = [];
+  try {
+    localStorage.removeItem('nexusCalcHistory');
+  } catch (error) {
+    console.warn('Не удалось очистить историю', error);
+  }
+  renderHistory();
+}
+
+/* ---------- Ввод ---------- */
+function update() {
+  expression.textContent = current || 'Готов к вычислениям';
+  result.textContent = current || '0';
+}
+
+function press(value) {
+  if (finished && /[0-9.(πℯ]/.test(value)) current = '';
+  finished = false;
+  current += value;
+  update();
+}
+
+function clearAll() {
+  current = '';
+  finished = false;
+  update();
+}
+
+function backspace() {
+  current = current.slice(0, -1);
+  update();
+}
+
+function percent() {
+  if (!current) return;
+  try {
+    current = format(safeCalculate(current) / 100);
+    update();
+  } catch {
+    result.textContent = 'Ошибка';
+  }
+}
+
+function negate() {
+  if (!current) return;
+  try {
+    current = format(-safeCalculate(current));
+    update();
+  } catch {
+    result.textContent = 'Ошибка';
+  }
+}
+
+/* ---------- Научные функции ---------- */
+const LABELS = {
+  sqrt: '√', square: 'sqr', sin: 'sin', cos: 'cos',
+  tan: 'tan', log: 'log', ln: 'ln', inv: '1/'
+};
+
+function scientific(fn) {
+  if (!current) return;
+  try {
+    const n = safeCalculate(current);
+    const rad = angleMode === 'deg' ? n * Math.PI / 180 : n;
+    let answer;
+    switch (fn) {
+      case 'sqrt': answer = Math.sqrt(n); break;
+      case 'square': answer = n * n; break;
+      case 'sin': answer = Math.sin(rad); break;
+      case 'cos': answer = Math.cos(rad); break;
+      case 'tan':
+        // tan не определён, когда cos = 0 (90°, 270° и т.д.)
+        if (Math.abs(Math.cos(rad)) < 1e-12) throw Error();
+        answer = Math.tan(rad);
+        break;
+      case 'log': answer = Math.log10(n); break;
+      case 'ln': answer = Math.log(n); break;
+      case 'inv': answer = 1 / n; break;
+    }
+    if (!Number.isFinite(answer)) throw Error();
+    current = format(answer);
+    expression.textContent = LABELS[fn] + '(' + format(n) + ')';
+    result.textContent = current;
+    finished = true;
+  } catch {
+    result.textContent = 'Ошибка';
+  }
+}
+
+/* ---------- Безопасный разбор выражений без eval() ----------
+   Приоритет: скобки → степень (^, справа налево) → унарный минус
+   → × ÷ (в т.ч. неявное умножение: 2(3), 2π) → + −            */
+function safeCalculate(input) {
+  const NUM = /^(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i;
+  const tokens = input.match(
+    /(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?|[()+\-*/^πℯ]/gi
+  );
+  if (!tokens || tokens.join('') !== input.replace(/\s/g, '')) {
+    throw Error('Некорректное выражение');
+  }
+
+  let i = 0;
+
+  function primary() {
+    const t = tokens[i++];
+    if (t === '(') {
+      const v = addSub();
+      if (tokens[i++] !== ')') throw Error();
+      return v;
+    }
+    if (t === 'π') return Math.PI;
+    if (t === 'ℯ') return Math.E;
+    if (!t || !NUM.test(t)) throw Error();
+    return Number(t);
+  }
+
+  function power() {
+    const base = primary();
+    if (tokens[i] === '^') {
+      i++;
+      const r = Math.pow(base, unary());
+      if (!Number.isFinite(r)) throw Error();
+      return r;
+    }
+    return base;
+  }
+
+  function unary() {
+    if (tokens[i] === '-') { i++; return -unary(); }
+    if (tokens[i] === '+') { i++; return unary(); }
+    return power();
+  }
+
+  function mulDiv() {
+    let v = unary();
+    while (true) {
+      const t = tokens[i];
+      if (t === '*' || t === '/') {
+        i++;
+        const b = unary();
+        if (t === '/' && b === 0) throw Error();
+        v = t === '*' ? v * b : v / b;
+      } else if (t === '(' || t === 'π' || t === 'ℯ') {
+        v *= unary(); // неявное умножение
+      } else {
+        break;
+      }
+    }
+    return v;
+  }
+
+  function addSub() {
+    let v = mulDiv();
+    while (tokens[i] === '+' || tokens[i] === '-') {
+      const op = tokens[i++];
+      const b = mulDiv();
+      v = op === '+' ? v + b : v - b;
+    }
+    return v;
+  }
+
+  const answer = addSub();
+  if (i !== tokens.length || !Number.isFinite(answer)) throw Error('Ошибка');
+  return answer;
+}
+
+function calculate() {
+  if (!current) return;
+  try {
+    const original = current;
+    const answer = safeCalculate(current);
+
+    current = format(answer);
+    expression.textContent = original + ' =';
+    result.textContent = current;
+    finished = true;
+
+    saveHistory(original, current);
+  } catch {
+    result.textContent = 'Ошибка';
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (/^[0-9.+\-*/()^]$/.test(e.key)) press(e.key);
+  else if (e.key === 'Enter' || e.key === '=') {
+    e.preventDefault(); // чтобы сфокусированная кнопка не сработала второй раз
+    calculate();
+  }
+  else if (e.key === 'Backspace') backspace();
+  else if (e.key === 'Escape') clearAll();
+  else if (e.key === '%') percent();
+});
+
+renderHistory();
+renderAngle();
+
+// Service worker для PWA (нужен sw.js рядом)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(console.error);
+  });
+}
+</script>
+</body>
+</html>
